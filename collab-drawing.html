@@ -1,0 +1,332 @@
+1
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Collaborative Drawing</title>
+  <style>
+    :root {
+      --pink: #ffb6c1;
+      --dark-pink: #ff69b4;
+      --bg: #1a1a1a;
+      --light-bg: #2a2a2a;
+    }
+    body {
+      background: var(--bg);
+      color: #fff;
+      font-family: 'Georgia', serif;
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+    }
+    h1 {
+      color: var(--pink);
+      margin-bottom: 20px;
+    }
+    /* Updated canvas styling for a responsive 9:16 ratio */
+    #drawingCanvas {
+      border: 2px solid var(--pink);
+      background-color: white;
+      border-radius: 12px;
+      touch-action: none;
+      margin-bottom: 20px;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+      width: 90vw;
+      max-width: 600px;
+      /* Instead of using aspect-ratio, we explicitly compute height for 9:16 */
+      height: calc(90vw * 16 / 9);
+      max-height: calc(600px * 16 / 9);
+    }
+    .controls {
+      margin: 0 auto 30px;
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    button, input[type="color"], input[type="range"] {
+      background: var(--pink);
+      border: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      color: black;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    input[type="range"] {
+      padding: 0;
+    }
+    button:hover, input[type="color"]:hover, input[type="range"]:hover {
+      opacity: 0.9;
+    }
+    a.back-link {
+      display: inline-block;
+      margin-top: 20px;
+      text-decoration: none;
+      color: var(--pink);
+      border: 1px solid var(--pink);
+      padding: 10px 20px;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎨 Collaborate on Our Canvas</h1>
+  
+  <!-- Shared Collaborative Canvas -->
+  <canvas id="drawingCanvas"></canvas>
+  
+  <!-- Drawing Tools -->
+  <div class="controls">
+    <input type="color" id="colorPicker" value="#000000" title="Choose Color">
+    <button id="eraserBtn">Eraser Off</button>
+    <label style="color: var(--pink); font-weight: bold;">Brush Size:</label>
+    <input type="range" id="brushSize" min="1" max="20" value="3" title="Brush Size">
+    <button onclick="clearCanvas()">Clear</button>
+    <button onclick="saveDrawing()">Save</button>
+  </div>
+  
+  <a href="drawing-gallery.html" class="back-link">← Go to Gallery</a>
+  
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+  
+  <script>
+    // Firebase configuration (ensure these match your project settings)
+    const firebaseConfig = {
+      apiKey: "AIzaSyC9FlIiG_8gDHAH-5SnmmnL_vAJTMSySIo",
+      authDomain: "chat-e7c75.firebaseapp.com",
+      databaseURL: "https://chat-e7c75-default-rtdb.firebaseio.com",
+      projectId: "chat-e7c75",
+      storageBucket: "chat-e7c75.appspot.com",
+      messagingSenderId: "340780127879",
+      appId: "1:340780127879:web:5f18ff2fb8d8f12af7ca22",
+      measurementId: "G-TWS5HLPZDE"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const auth = firebase.auth();
+    
+    // Enforce Google sign-in
+    auth.onAuthStateChanged(user => {
+      if (!user) {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        auth.signInWithPopup(provider).catch(e => console.error("Google sign-in failed:", e));
+      }
+    });
+    
+    // Resize the canvas's internal drawing surface to match its displayed size,
+    // taking into account the device's pixel ratio.
+    function resizeCanvas() {
+      const canvasEl = document.getElementById('drawingCanvas');
+      const rect = canvasEl.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      // Reset any existing transforms before resizing
+      ctx.resetTransform && ctx.resetTransform();
+      canvasEl.width = rect.width * dpr;
+      canvasEl.height = rect.height * dpr;
+      ctx.scale(dpr, dpr);
+    }
+    window.addEventListener('load', resizeCanvas);
+    window.addEventListener('resize', () => { setTimeout(resizeCanvas, 200); });
+    
+    // Get canvas and its context
+    const canvas = document.getElementById('drawingCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    // Drawing state variables
+    let drawing = false;
+    let lastX = 0, lastY = 0;
+    let currentColor = document.getElementById('colorPicker').value;
+    let isEraser = false;
+    let brushSize = parseInt(document.getElementById('brushSize').value);
+    
+    // For normalization, we base our calculations on the CSS (displayed) size
+    function getDisplaySize() {
+      const rect = canvas.getBoundingClientRect();
+      return { width: rect.width, height: rect.height };
+    }
+    
+    function normalize(x, y) {
+      const display = getDisplaySize();
+      return { x: x / display.width, y: y / display.height };
+    }
+    
+    function denormalize(normX, normY) {
+      const display = getDisplaySize();
+      return { x: normX * display.width, y: normY * display.height };
+    }
+    
+    // Pointer event handlers
+    function getPointerPos(e) {
+      const rect = canvas.getBoundingClientRect();
+      if (e.touches && e.touches.length) {
+        return {
+          x: e.touches[0].clientX - rect.left,
+          y: e.touches[0].clientY - rect.top
+        };
+      }
+      return {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+      };
+    }
+    
+    function pointerDown(e) {
+      e.preventDefault();
+      drawing = true;
+      const pos = getPointerPos(e);
+      lastX = pos.x;
+      lastY = pos.y;
+    }
+    
+    function pointerMove(e) {
+      if (!drawing) return;
+      const pos = getPointerPos(e);
+      const drawColor = isEraser ? "white" : currentColor;
+      const currentLineWidth = isEraser ? 10 : brushSize;
+      
+      // Draw locally using absolute coordinates
+      drawLineSegment(lastX, lastY, pos.x, pos.y, drawColor, currentLineWidth);
+      
+      // Normalize coordinates relative to the display size
+      const normStart = normalize(lastX, lastY);
+      const normEnd = normalize(pos.x, pos.y);
+      const normWidth = currentLineWidth / getDisplaySize().width;
+      
+      // Send normalized stroke to Firebase
+      sendStroke(normStart.x, normStart.y, normEnd.x, normEnd.y, drawColor, normWidth);
+      
+      lastX = pos.x;
+      lastY = pos.y;
+    }
+    
+    function pointerUp(e) {
+      drawing = false;
+      ctx.beginPath();
+    }
+    
+    function drawLineSegment(x1, y1, x2, y2, color, width) {
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = width;
+      ctx.lineCap = "round";
+      ctx.stroke();
+    }
+    
+    function sendStroke(fromX, fromY, toX, toY, color, normWidth) {
+      const user = auth.currentUser;
+      if (!user) return;
+      db.ref('drawings/live').push({
+        fromX, fromY, toX, toY,
+        color,
+        width: normWidth,  // normalized line width
+        uid: user.uid,
+        timestamp: Date.now()
+      });
+    }
+    
+    // Listen for new strokes from Firebase (convert normalized back to absolute)
+    db.ref('drawings/live').on('child_added', snapshot => {
+      const stroke = snapshot.val();
+      const user = auth.currentUser;
+      const absFrom = denormalize(stroke.fromX, stroke.fromY);
+      const absTo = denormalize(stroke.toX, stroke.toY);
+      const absWidth = stroke.width * getDisplaySize().width;
+      if (!user || stroke.uid !== user.uid) {
+        drawLineSegment(absFrom.x, absFrom.y, absTo.x, absTo.y, stroke.color, absWidth);
+      }
+    });
+    
+    // Listen for removal events: when the live node is emptied, clear the canvas.
+    db.ref('drawings/live').on('child_removed', snapshot => {
+      db.ref('drawings/live').once('value').then(snap => {
+        if (!snap.exists()) {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+      });
+    });
+    
+    // Set up pointer event listeners.
+    canvas.addEventListener('mousedown', pointerDown);
+    canvas.addEventListener('mousemove', pointerMove);
+    canvas.addEventListener('mouseup', pointerUp);
+    canvas.addEventListener('mouseout', pointerUp);
+    canvas.addEventListener('touchstart', pointerDown, {passive: false});
+    canvas.addEventListener('touchmove', pointerMove, {passive: false});
+    canvas.addEventListener('touchend', pointerUp);
+    
+    // Update color on color picker change.
+    document.getElementById('colorPicker').addEventListener('input', e => {
+      currentColor = e.target.value;
+      isEraser = false;
+      document.getElementById('eraserBtn').innerText = "Eraser Off";
+    });
+    
+    // Update brush size on range slider change.
+    document.getElementById('brushSize').addEventListener('input', e => {
+      brushSize = parseInt(e.target.value);
+    });
+    
+    // Toggle eraser mode.
+    document.getElementById('eraserBtn').addEventListener('click', function() {
+      isEraser = !isEraser;
+      this.innerText = isEraser ? "Eraser On" : "Eraser Off";
+    });
+    
+    // Clear the canvas and remove live strokes from Firebase.
+    function clearCanvas() {
+      if (confirm("Clear the collaborative canvas? This cannot be undone.")) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        db.ref('drawings/live').remove();
+      }
+    }
+    
+    // Save the current canvas as an image in Firebase, then clear live strokes.
+    function saveDrawing() {
+      const image = canvas.toDataURL("image/png");
+      const now = new Date();
+      const formattedDate = now.toLocaleString();
+      const timestamp = now.getTime();
+      const user = auth.currentUser;
+      if (!user) {
+        alert("You must be signed in with a Google account to draw.");
+        return;
+      }
+      db.ref('drawings/saved').push({
+        image,
+        date: formattedDate,
+        timestamp,
+        uid: user.uid
+      }).then(() => {
+        alert("Drawing saved to gallery!");
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        db.ref('drawings/live').remove();
+      }).catch(() => {
+        alert("Failed to save drawing");
+      });
+    }
+    
+    // On initial load, fetch existing live strokes.
+    function loadLiveStrokes() {
+      db.ref('drawings/live').once('value', snapshot => {
+        snapshot.forEach(child => {
+          const stroke = child.val();
+          const absFrom = denormalize(stroke.fromX, stroke.fromY);
+          const absTo = denormalize(stroke.toX, stroke.toY);
+          const absWidth = stroke.width * getDisplaySize().width;
+          drawLineSegment(absFrom.x, absFrom.y, absTo.x, absTo.y, stroke.color, absWidth);
+        });
+      });
+    }
+    loadLiveStrokes();
+  </script>
+</body>
+</html>
