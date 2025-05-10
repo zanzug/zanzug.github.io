@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Scrapbook</title>
+  <style>
+    body {
+      font-family: 'Georgia', serif;
+      margin: 0;
+      padding: 0;
+      background: #0d0d0d;
+      color: #fff;
+      text-align: center;
+    }
+
+    .header-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      color: #ffb6c1;
+      margin: 0;
+    }
+
+    /* Autoplay Toggle Button */
+    .autoplay-btn {
+      background: #ffb6c1;
+      border: none;
+      border-radius: 20px;
+      padding: 5px 15px;
+      color: #222;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .autoplay-btn.active {
+      background: #ff69b4;
+      box-shadow: 0 0 10px rgba(255, 105, 180, 0.7);
+    }
+
+    /* Song Player Styles */
+    .song-box {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      background-color: #ffb6c1;
+      border-radius: 999px;
+      padding: 8px 12px;
+      margin: 16px auto;
+      max-width: 180px;
+      box-shadow: 0 0 8px rgba(255, 182, 193, 0.4);
+      animation: pulse 2s infinite;
+    }
+
+    .song-box.paused {
+      animation: none;
+      opacity: 0.85;
+    }
+
+    .song-art {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      margin-right: 10px;
+      object-fit: cover;
+    }
+
+    .song-name {
+      font-size: 0.9rem;
+      font-weight: bold;
+      color: #222;
+      text-align: left;
+    }
+
+    .play-btn {
+      background: none;
+      border: none;
+      font-size: 1.2rem;
+      margin-left: auto;
+      cursor: pointer;
+      color: #222;
+    }
+
+    @keyframes pulse {
+      0% { box-shadow: 0 0 10px rgba(255, 182, 193, 0.4); }
+      50% { box-shadow: 0 0 20px rgba(255, 182, 193, 0.9); }
+      100% { box-shadow: 0 0 10px rgba(255, 182, 193, 0.4); }
+    }
+
+    /* Polaroid Styles */
+    .polaroid-wrapper {
+      position: relative;
+      width: 280px;
+      aspect-ratio: 3 / 4;
+      margin: 40px auto 12px;
+      background: #fff;
+      border-radius: 6px;
+      box-shadow: 4px 8px 18px rgba(0, 0, 0, 0.5);
+      padding: 10px 10px 30px;
+      box-sizing: border-box;
+      transform: rotate(var(--tilt));
+      transition: transform 0.3s ease;
+    }
+
+    .polaroid-wrapper img,
+    .polaroid-wrapper video {
+      width: 100%;
+      height: auto;
+      border-radius: 4px;
+      object-fit: cover;
+    }
+
+    .caption {
+      font-family: 'Caveat', cursive;
+      font-size: 1rem;
+      color: #444;
+      margin-top: 12px;
+    }
+
+    #pageNumber {
+      font-size: 0.9rem;
+      color: #ffb6c1;
+      background: #1a1a1a;
+      padding: 4px 12px;
+      border-radius: 999px;
+      display: inline-block;
+      margin: 20px auto 0;
+      box-shadow: 0 0 6px rgba(255, 182, 193, 0.3);
+    }
+  </style>
+</head>
+<body>
+  <div class="header-container">
+    <h1>SCRAPBOOOOK 😜</h1>
+    <button class="autoplay-btn" id="autoplayBtn">AUTOPLAY: OFF</button>
+  </div>
+
+  <!-- Song Player -->
+  <div class="song-box" id="songBox">
+    <img class="song-art" id="songArt" src="images/song.jpg" alt="Song Art">
+    <div class="song-name" id="songName">Your Song Name</div>
+    <button class="play-btn" onclick="togglePlay()">▶</button>
+  </div>
+
+  <!-- Polaroid Frame -->
+  <div class="polaroid-wrapper" id="pageDisplay" style="--tilt: 0deg;">
+    <div id="mediaContainer"></div>
+    <div class="caption" id="imageCaption"></div>
+  </div>
+
+  <div id="pageNumber">Page 1</div>
+
+  <audio id="songPlayer" src=""></audio>
+
+  <script>
+    // Scrapbook data
+    const imageLinks = {
+      1: {
+        image: "images/zanzug.jpg",
+        song: "songs/sun.mp3",
+        songName: "sunshine lollies",
+        color: "#f5aebe",
+        songImage: "images/zanzug1.jpg",
+        caption: "The day it began ❤️ - 9/04/25",
+        tilt: "-2deg"
+      },
+      2: {
+        image: "images/vivi.jpg",
+        song: "songs/cute-circus.mp3",
+        songName: "Cite Circus",
+        color: "#bc92ab",
+        songImage: "images/vivi2.jpg",
+        caption: "‘pa ba ba ba’ vivi chants - 11/04/25 😜",
+        tilt: "2.5deg"
+      },
+      3: { 
+        image: "images/eli.mp4",  
+        song: "songs/mac.mp3",
+        songName: "20210616",
+        color: "f2e5c7",
+        songImage: "images/eli1.jpg",
+        caption: "boogie bomb hit unc🕺 - 12/04/25",
+        tilt: "1deg"
+      }
+    };
+
+    // Cache elements
+    const pageDisplay = document.getElementById("pageDisplay");
+    const mediaContainer = document.getElementById("mediaContainer");
+    const imageCaption = document.getElementById("imageCaption");
+    const pageNumber = document.getElementById("pageNumber");
+    const songPlayer = document.getElementById("songPlayer");
+    const songBox = document.getElementById("songBox");
+    const songName = document.getElementById("songName");
+    const songArt = document.getElementById("songArt");
+    const autoplayBtn = document.getElementById("autoplayBtn");
+    
+    let currentPage = 1;
+    let isPlaying = false;
+    let currentMediaElement = null;
+    let autoplayEnabled = false;
+
+    // Toggle autoplay function
+    function toggleAutoplay() {
+      autoplayEnabled = !autoplayEnabled;
+      autoplayBtn.textContent = `AUTOPLAY: ${autoplayEnabled ? 'ON' : 'OFF'}`;
+      autoplayBtn.classList.toggle('active', autoplayEnabled);
+      
+      // If turning on autoplay and there's a song, play it
+      if (autoplayEnabled && imageLinks[currentPage].song) {
+        songPlayer.play();
+        isPlaying = true;
+        songBox.classList.remove("paused");
+      } else if (!autoplayEnabled && isPlaying) {
+        songPlayer.pause();
+        isPlaying = false;
+        songBox.classList.add("paused");
+      }
+    }
+
+    function loadImage() {
+      const page = imageLinks[currentPage];
+      
+      // Clear previous media
+      mediaContainer.innerHTML = '';
+      
+      if (page && (page.image || page.video)) {
+        const mediaPath = page.image;
+        const isVideo = mediaPath && (mediaPath.endsWith('.mp4') || mediaPath.endsWith('.webm') || mediaPath.endsWith('.mov'));
+        
+        if (isVideo) {
+          const video = document.createElement('video');
+          video.src = mediaPath;
+          video.autoplay = true;
+          video.loop = true;
+          video.muted = true;
+          video.controls = false;
+          video.playsInline = true;
+          mediaContainer.appendChild(video);
+          currentMediaElement = video;
+        } else if (mediaPath) {
+          const img = document.createElement('img');
+          img.src = mediaPath;
+          img.alt = "Scrapbook Photo";
+          mediaContainer.appendChild(img);
+          currentMediaElement = img;
+        }
+        
+        imageCaption.textContent = page.caption || "";
+        pageDisplay.style.setProperty('--tilt', page.tilt || '0deg');
+        
+        if (page.song) {
+          songPlayer.src = page.song;
+          songName.textContent = page.songName;
+          songArt.src = page.songImage || "images/song.jpg";
+          songBox.style.backgroundColor = page.color || "#ffb6c1";
+          songBox.style.display = "flex";
+          
+          // Autoplay if enabled
+          if (autoplayEnabled) {
+            songPlayer.play();
+            isPlaying = true;
+            songBox.classList.remove("paused");
+          } else {
+            songPlayer.pause();
+            isPlaying = false;
+            songBox.classList.add("paused");
+          }
+        } else {
+          songBox.style.display = "none";
+          songPlayer.pause();
+          isPlaying = false;
+          songBox.classList.add("paused");
+        }
+      } else {
+        mediaContainer.innerHTML = '<div style="height:100%; display:flex; align-items:center; justify-content:center; color:#888;">No media uploaded yet</div>';
+        imageCaption.textContent = "";
+        pageDisplay.style.setProperty('--tilt', '0deg');
+        songBox.style.display = "none";
+      }
+      
+      pageNumber.textContent = `Page ${currentPage}`;
+    }
+
+    function togglePlay() {
+      if (isPlaying) {
+        songPlayer.pause();
+        isPlaying = false;
+        songBox.classList.add("paused");
+      } else {
+        songPlayer.play();
+        isPlaying = true;
+        songBox.classList.remove("paused");
+      }
+    }
+
+    function changePage(dir) {
+      if (currentMediaElement && currentMediaElement.pause) {
+        currentMediaElement.pause();
+      }
+      
+      songPlayer.pause();
+      isPlaying = false;
+      songBox.classList.add("paused");
+      
+      currentPage = (currentPage + dir - 1 + Object.keys(imageLinks).length) % Object.keys(imageLinks).length + 1;
+      loadImage();
+    }
+
+    // Event listeners
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowRight") changePage(1);
+      if (e.key === "ArrowLeft") changePage(-1);
+    });
+
+    let touchStartX = 0;
+    document.addEventListener("touchstart", (e) => {
+      touchStartX = e.touches[0].clientX;
+    }, { passive: true });
+
+    document.addEventListener("touchend", (e) => {
+      const touchEndX = e.changedTouches[0].clientX;
+      if (touchEndX - touchStartX > 50) changePage(-1);
+      if (touchStartX - touchEndX > 50) changePage(1);
+    }, { passive: true });
+
+    autoplayBtn.addEventListener("click", toggleAutoplay);
+
+    // Initialize
+    loadImage();
+    songBox.classList.add("paused");
+  </script>
+</body>
+</html>

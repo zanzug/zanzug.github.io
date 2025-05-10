@@ -1,0 +1,74 @@
+<!-- reveal.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Reveal Secret Message</title>
+  <style>
+    body { 
+      background: linear-gradient(135deg, #fff0f5 0%, #ffe4e6 100%);
+      font-family: 'Georgia', serif; min-height: 100vh;
+    }
+    .message-container {
+      max-width: 600px; margin: 50px auto; padding: 30px;
+      background: white; border-radius: 15px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+      position: relative;
+    }
+    .message-content {
+      font-size: 18px; line-height: 1.6;
+      color: #6d6875; white-space: pre-wrap;
+    }
+    .heart-animation {
+      position: absolute; top: -20px; right: -20px;
+      animation: float 3s ease-in-out infinite;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-20px); }
+    }
+  </style>
+</head>
+<body>
+  <div class="message-container">
+    <div class="heart-animation">💌</div>
+    <h1>Secret Love Letter</h1>
+    <div class="message-content" id="message"></div>
+    <p style="color: #ff69b4; margin-top: 20px;">❤️ Message from Elisha</p>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+    import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+
+    const firebaseConfig = { /* Same as above */ };
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const messageId = urlParams.get('id');
+
+    if (messageId) {
+      const messageRef = ref(db, `secretMessages/${messageId}`);
+      
+      get(messageRef).then((snapshot) => {
+        if (snapshot.exists()) {
+          const message = snapshot.val();
+          document.getElementById('message').textContent = message.text;
+          
+          // Mark as read
+          if (!message.read) {
+            update(messageRef, { read: true });
+          }
+        } else {
+          document.getElementById('message').textContent = 
+            "This love letter has vanished into the ether... 💔";
+        }
+      });
+    } else {
+      document.getElementById('message').textContent = 
+        "No secret message found - check your love link! 💌";
+    }
+  </script>
+</body>
+</html>

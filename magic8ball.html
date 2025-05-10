@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Magic 8 Ball</title>
+  <style>
+    :root {
+      --pink-accent: #ff69b4;
+      --blue-accent: #4285f4;
+      --bg-color: #0d0d0d;
+      --card-bg: #1a1a1a;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-color);
+      color: white;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      touch-action: manipulation;
+    }
+    
+    .container {
+      padding: 15px;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+    
+    h1 {
+      color: var(--pink-accent);
+      text-align: center;
+      margin: 10px 0 20px;
+      font-size: 24px;
+    }
+    
+    /* 8 Ball Styling */
+    #eight-ball {
+      width: 200px;
+      height: 200px;
+      margin: 0 auto 25px;
+      position: relative;
+      background: black;
+      border-radius: 50%;
+      box-shadow: 0 0 30px rgba(255,105,180,0.3);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    #answer-window {
+      width: 100px;
+      height: 100px;
+      background: #111;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: white;
+      font-size: 14px;
+      text-align: center;
+      padding: 10px;
+    }
+    
+    /* Input Area */
+    #question-input {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 15px;
+      border: 2px solid var(--pink-accent);
+      border-radius: 8px;
+      background: var(--card-bg);
+      color: white;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+    
+    #ask-button {
+      width: 100%;
+      padding: 12px;
+      background: var(--pink-accent);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      margin-bottom: 20px;
+      cursor: pointer;
+    }
+    
+    /* Tab System */
+    .tab-container {
+      display: flex;
+      margin-bottom: 10px;
+      border-bottom: 1px solid #333;
+    }
+    
+    .tab {
+      flex: 1;
+      padding: 12px;
+      text-align: center;
+      background: var(--card-bg);
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    
+    .tab.active {
+      border-bottom: 3px solid;
+      font-weight: bold;
+    }
+    
+    .tab-mine.active {
+      border-bottom-color: var(--blue-accent);
+      color: var(--blue-accent);
+    }
+    
+    .tab-hers.active {
+      border-bottom-color: var(--pink-accent);
+      color: var(--pink-accent);
+    }
+    
+    /* Log Containers */
+    .log-content {
+      display: none;
+      height: 300px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    
+    .log-content.active {
+      display: block;
+    }
+    
+    .log-entry {
+      padding: 12px;
+      margin-bottom: 10px;
+      border-radius: 8px;
+      font-size: 14px;
+      position: relative;
+    }
+    
+    .entry-mine {
+      background: rgba(66, 133, 244, 0.1);
+      border-left: 3px solid var(--blue-accent);
+    }
+    
+    .entry-hers {
+      background: rgba(255, 105, 180, 0.1);
+      border-left: 3px solid var(--pink-accent);
+    }
+    
+    .log-question {
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    
+    .log-answer {
+      margin-bottom: 5px;
+    }
+    
+    .log-timestamp {
+      font-size: 12px;
+      color: #aaa;
+      text-align: right;
+    }
+    
+    .back-btn {
+      display: block;
+      text-align: center;
+      padding: 12px;
+      margin: 20px auto;
+      background: var(--card-bg);
+      color: white;
+      border: 1px solid var(--pink-accent);
+      border-radius: 8px;
+      text-decoration: none;
+      max-width: 200px;
+    }
+    
+    /* Animations */
+    .shake {
+      animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+    }
+    
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); }
+      20%, 40%, 60%, 80% { transform: translateX(10px); }
+    }
+    
+    .fade-in {
+      animation: fadeIn 1s ease-in;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    /* iPhone notch/punch-hole safe areas */
+    @supports (padding: max(0px)) {
+      body {
+        padding-left: max(15px, env(safe-area-inset-left));
+        padding-right: max(15px, env(safe-area-inset-right));
+        padding-bottom: max(15px, env(safe-area-inset-bottom));
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Magic 8 Ball</h1>
+    
+    <div id="eight-ball">
+      <div id="answer-window">
+        <div id="answer-text">Ask a question...</div>
+      </div>
+    </div>
+    
+    <input type="text" id="question-input" placeholder="Ask your question...">
+    <button id="ask-button">Ask the 8 Ball</button>
+    
+    <div class="tab-container">
+      <div class="tab tab-mine active" data-tab="mine">My Prompts</div>
+      <div class="tab tab-hers" data-tab="hers">Her Prompts</div>
+    </div>
+    
+    <div id="mine-log" class="log-content active"></div>
+    <div id="hers-log" class="log-content"></div>
+    
+    <a href="index.html" class="back-btn">← Back to Main</a>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+    import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyC9FlIiG_8gDHAH-5SnmmnL_vAJTMSySIo",
+      authDomain: "chat-e7c75.firebaseapp.com",
+      databaseURL: "https://chat-e7c75-default-rtdb.firebaseio.com",
+      projectId: "chat-e7c75",
+      storageBucket: "chat-e7c75.appspot.com",
+      messagingSenderId: "340780127879",
+      appId: "1:340780127879:web:5f18ff2fb8d8f12af7ca22",
+      measurementId: "G-TWS5HLPZDE"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+    const auth = getAuth(app);
+
+    const answers = [
+      "It is certain",
+      "It is decidedly so",
+      "Without a doubt",
+      "Yes definitely",
+      "You may rely on it",
+      "As I see it, yes",
+      "Most likely",
+      "Outlook good",
+      "Yes",
+      "Signs point to yes",
+      "Reply hazy try again",
+      "Ask again later",
+      "Better not tell you now",
+      "Cannot predict now",
+      "Concentrate and ask again",
+      "Don't count on it",
+      "My reply is no",
+      "My sources say no",
+      "Outlook not so good",
+      "Very doubtful"
+    ];
+
+    // DOM elements
+    const questionInput = document.getElementById('question-input');
+    const askButton = document.getElementById('ask-button');
+    const answerText = document.getElementById('answer-text');
+    const eightBall = document.getElementById('eight-ball');
+    const mineLog = document.getElementById('mine-log');
+    const hersLog = document.getElementById('hers-log');
+    const tabs = document.querySelectorAll('.tab');
+    
+    // Partner emails
+    const myEmails = ['tsitalashes@gmail.com'];
+    const herEmails = ['zuzannap871@gmail.com'];
+    let currentUser = null;
+
+    // Tab switching
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        
+        document.querySelectorAll('.log-content').forEach(content => {
+          content.classList.remove('active');
+        });
+        document.getElementById(`${tab.dataset.tab}-log`).classList.add('active');
+      });
+    });
+
+    // Auth state handler
+    onAuthStateChanged(auth, (user) => {
+      currentUser = user;
+      if (user) {
+        loadHistory();
+      }
+    });
+
+    function loadHistory() {
+      onChildAdded(ref(database, 'eightBallLogs'), (snapshot) => {
+        const log = snapshot.val();
+        addLogEntry(log);
+      });
+    }
+
+    function addLogEntry(log) {
+      const entry = document.createElement('div');
+      const isMine = myEmails.includes(log.userEmail);
+      const isHers = herEmails.includes(log.userEmail);
+      
+      entry.className = `log-entry ${isMine ? 'entry-mine' : 'entry-hers'}`;
+      entry.innerHTML = `
+        <div class="log-question">${log.question}</div>
+        <div class="log-answer">🎱 ${log.answer}</div>
+        <div class="log-timestamp">${formatTimestamp(log.timestamp)}</div>
+      `;
+      
+      const targetContainer = isHers ? hersLog : mineLog;
+      targetContainer.appendChild(entry);
+      scrollToBottom(targetContainer);
+    }
+
+    function scrollToBottom(element) {
+      setTimeout(() => {
+        element.scrollTop = element.scrollHeight;
+      }, 100);
+    }
+
+    function formatTimestamp(timestamp) {
+      const date = new Date(timestamp);
+      return date.toLocaleString();
+    }
+
+    askButton.addEventListener('click', askQuestion);
+    questionInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') askQuestion();
+    });
+
+    function askQuestion() {
+      const question = questionInput.value.trim();
+      if (!question || !currentUser) return;
+
+      askButton.disabled = true;
+      questionInput.disabled = true;
+      answerText.textContent = '';
+      eightBall.classList.add('shake');
+
+      setTimeout(() => {
+        eightBall.classList.remove('shake');
+        const answer = answers[Math.floor(Math.random() * answers.length)];
+        answerText.textContent = answer;
+        answerText.classList.add('fade-in');
+
+        // Save to database
+        const logData = {
+          question: question,
+          answer: answer,
+          userName: currentUser.displayName || "Anonymous",
+          userId: currentUser.uid,
+          userEmail: currentUser.email,
+          timestamp: new Date().toISOString()
+        };
+
+        push(ref(database, 'eightBallLogs'), logData)
+          .then(() => {
+            questionInput.value = '';
+            questionInput.disabled = false;
+            askButton.disabled = false;
+            questionInput.focus();
+          });
+
+        setTimeout(() => {
+          answerText.classList.remove('fade-in');
+        }, 3000);
+      }, 1500);
+    }
+  </script>
+</body>
+</html>
