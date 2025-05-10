@@ -1,0 +1,185 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Hangman Game</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      background-color: #0d0d0d;
+      color: #fff;
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+    #game {
+      display: none;
+      text-align: center;
+    }
+    #word {
+      font-size: 2em;
+      letter-spacing: 10px;
+      margin: 20px 0;
+    }
+    #letters button {
+      margin: 5px;
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    #status {
+      margin-top: 20px;
+    }
+    img {
+      width: 200px;
+      margin: 20px 0;
+    }
+  </style>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+      databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT_ID.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+    firebase.initializeApp(firebaseConfig);
+  </script>
+</head>
+<body>
+  <h1>Hangman Game</h1>
+  <button id="loginBtn">Sign in with Google</button>
+  <button id="logoutBtn" style="display:none;">Logout</button>
+
+  <div id="game">
+    <img id="hangmanImage" src="null" alt="Hangman Stage">
+    <div id="word">_ _ _ _ _</div>
+    <div id="letters"></div>
+    <div id="status"></div>
+  </div>
+
+  <script>
+    const auth = firebase.auth();
+    const db = firebase.database();
+
+    const loginBtn = document.getElementById("loginBtn");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const gameContainer = document.getElementById("game");
+    const wordDisplay = document.getElementById("word");
+    const lettersContainer = document.getElementById("letters");
+    const statusDisplay = document.getElementById("status");
+    const hangmanImage = document.getElementById("hangmanImage");
+
+    const stages = [
+      "null", // Stage 0 - No parts
+      "null", // Stage 1 - Head
+      "null", // Stage 2 - Body
+      "null", // Stage 3 - One arm
+      "null", // Stage 4 - Two arms
+      "null", // Stage 5 - One leg
+      "null", // Stage 6 - Two legs (game over)
+    ];
+
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        loginBtn.style.display = "none";
+        logoutBtn.style.display = "inline-block";
+        startGame(user);
+      } else {
+        loginBtn.style.display = "inline-block";
+        logoutBtn.style.display = "none";
+        gameContainer.style.display = "none";
+      }
+    });
+
+    loginBtn.addEventListener("click", () => {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      auth.signInWithPopup(provider).catch(console.error);
+    });
+
+    logoutBtn.addEventListener("click", () => {
+      auth.signOut();
+    });
+
+    function startGame(user) {
+      const uid = user.uid;
+      const statsRef = db.ref("hangmanStats/" + uid);
+      statsRef.once("value").then(snapshot => {
+        if (!snapshot.exists()) {
+          statsRef.set({ wins: 0, losses: 0 });
+        }
+        initializeGame(statsRef);
+      });
+    }
+
+    function initializeGame(statsRef) {
+      const words = ["banana", "zebra", "rocket", "coffee"];
+      const secretWord = words[Math.floor(Math.random() * words.length)];
+      let guessed = [];
+      let wrongGuesses = 0;
+
+      gameContainer.style.display = "block";
+      updateDisplay();
+
+      lettersContainer.innerHTML = "";
+      "abcdefghijklmnopqrstuvwxyz".split("").forEach(letter => {
+        const btn = document.createElement("button");
+        btn.textContent = letter;
+        btn.onclick = () => guessLetter(letter, btn);
+        lettersContainer.appendChild(btn);
+      });
+
+      function guessLetter(letter, button) {
+        button.disabled = true;
+        if (secretWord.includes(letter)) {
+          guessed.push(letter);
+        } else {
+          wrongGuesses++;
+        }
+        updateDisplay();
+        checkGameEnd();
+      }
+
+      function updateDisplay() {
+        wordDisplay.textContent = secretWord.split("").map(l => guessed.includes(l) ? l : "_").join(" ");
+        hangmanImage.src = stages[Math.min(wrongGuesses, stages.length - 1)];
+      }
+
+      function checkGameEnd() {
+        const won = secretWord.split("").every(l => guessed.includes(l));
+        if (won) {
+          statusDisplay.textContent = "You won!";
+          statsRef.transaction(current => {
+            current.wins++;
+            return current;
+          });
+          disableAllButtons();
+        } else if (wrongGuesses >= 6) {
+          statusDisplay.textContent = "You lost! Word was: " + secretWord;
+          statsRef.transaction(current => {
+            current.losses++;
+            return current;
+          });
+          disableAllButtons();
+        }
+      }
+
+      function disableAllButtons() {
+        Array.from(lettersContainer.children).forEach(btn => btn.disabled = true);
+      }
+    }
+  </script>
+</body>
+</html>

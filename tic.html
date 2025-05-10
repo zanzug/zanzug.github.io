@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Tic Tac Toe Multiplayer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <style>
+    body {
+      background: #fff0f5;
+      font-family: 'Arial Rounded MT Bold', sans-serif;
+      text-align: center;
+      padding: 20px;
+      color: #4a4a4a;
+    }
+    h1 {
+      color: #ff69b4;
+    }
+    .player-select {
+      margin: 20px 0;
+    }
+    .score-box {
+      background: #ffe4ec;
+      border: 2px solid #ffb6c1;
+      border-radius: 12px;
+      padding: 15px;
+      margin: 10px auto;
+      max-width: 320px;
+    }
+    .score-label {
+      font-weight: bold;
+      color: #ff1493;
+    }
+    button {
+      background-color: #ff69b4;
+      color: white;
+      border: none;
+      padding: 8px 14px;
+      margin: 5px;
+      border-radius: 10px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #ff85c2;
+    }
+    .board {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 5px;
+      max-width: 300px;
+      margin: 20px auto;
+    }
+    .cell {
+      width: 90px;
+      height: 90px;
+      background: #ffeef4;
+      border: 2px solid #ffb6c1;
+      font-size: 48px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>Tic Tac Toe</h1>
+  
+  <div class="player-select">
+    <button onclick="setPlayer('X')">I’m Player 1 (X)</button>
+    <button onclick="setPlayer('O')">I’m Player 2 (O)</button>
+    <p id="currentPlayerLabel">Select your side</p>
+  </div>
+  
+  <div class="board" id="gameBoard"></div>
+  <p id="gameStatus"></p>
+  <button onclick="resetGame()">Reset Game</button>
+  
+  <div class="score-box">
+    <h3>Your Score</h3>
+    Wins: <span id="yourWins">0</span> | Losses: <span id="yourLosses">0</span><br>
+    <button onclick="adjustScore('your', 'wins', 1)">+ Win</button>
+    <button onclick="adjustScore('your', 'losses', 1)">+ Loss</button>
+    <button onclick="adjustScore('your', 'wins', -1)">− Win</button>
+    <button onclick="adjustScore('your', 'losses', -1)">− Loss</button>
+  </div>
+  
+  <div class="score-box">
+    <h3>Her Score</h3>
+    Wins: <span id="herWins">0</span> | Losses: <span id="herLosses">0</span><br>
+    <button onclick="adjustScore('her', 'wins', 1)">+ Win</button>
+    <button onclick="adjustScore('her', 'losses', 1)">+ Loss</button>
+    <button onclick="adjustScore('her', 'wins', -1)">− Win</button>
+    <button onclick="adjustScore('her', 'losses', -1)">− Loss</button>
+  </div>
+  
+  <!-- Audio tags for sound effects -->
+  <audio id="dropSound" src="sounds/drop.mp3"></audio>
+  <audio id="winSound" src="sounds/win.mp3"></audio>
+  <audio id="resetSound" src="sounds/reset.mp3"></audio>
+  
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyC9FlIiG_8gDHAH-5SnmmnL_vAJTMSySIo",
+      authDomain: "chat-e7c75.firebaseapp.com",
+      databaseURL: "https://chat-e7c75-default-rtdb.firebaseio.com",
+      projectId: "chat-e7c75",
+      storageBucket: "chat-e7c75.appspot.com",
+      messagingSenderId: "340780127879",
+      appId: "1:340780127879:web:5f18ff2fb8d8f12af7ca22"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const gameRef = db.ref("games/ticTacToe");
+    const scoreRef = db.ref("scores/ticTacToe");
+    
+    let player = null;  // 'X' or 'O'
+    const boardSize = 9;
+    const boardEl = document.getElementById("gameBoard");
+    const statusEl = document.getElementById("gameStatus");
+    const currentPlayerLabel = document.getElementById("currentPlayerLabel");
+    
+    // Audio elements
+    const dropSound = document.getElementById("dropSound");
+    const winSound = document.getElementById("winSound");
+    const resetSound = document.getElementById("resetSound");
+    
+    function setPlayer(symbol) {
+      player = symbol;
+      currentPlayerLabel.textContent = `You are playing as ${symbol}`;
+    }
+    
+    function drawBoard(board) {
+      boardEl.innerHTML = "";
+      board.forEach((cell, i) => {
+        const div = document.createElement("div");
+        div.className = "cell";
+        div.textContent = cell || "";
+        div.onclick = () => makeMove(i);
+        boardEl.appendChild(div);
+      });
+    }
+    
+    function makeMove(index) {
+      if (!player) return alert("Please select your player side first.");
+      gameRef.once("value").then(snap => {
+        const data = snap.val() || { board: Array(boardSize).fill(""), turn: "X", winner: "" };
+        if (data.winner) return;  // game over
+        if (data.turn !== player) return alert("Not your turn!");
+        if (data.board[index]) return; // cell already taken
+        data.board[index] = player;
+        if (checkWin(data.board, player)) {
+          data.winner = player;
+          winSound.play();
+        } else {
+          data.turn = (data.turn === "X") ? "O" : "X";
+        }
+        gameRef.set(data);
+        dropSound.play();
+      });
+    }
+    
+    function checkWin(board, symbol) {
+      const wins = [
+        [0,1,2], [3,4,5], [6,7,8],  // rows
+        [0,3,6], [1,4,7], [2,5,8],  // columns
+        [0,4,8], [2,4,6]            // diagonals
+      ];
+      return wins.some(line => line.every(i => board[i] === symbol));
+    }
+    
+    function resetGame() {
+      resetSound.play();
+      gameRef.set({ board: Array(boardSize).fill(""), turn: "X", winner: "" });
+    }
+    
+    gameRef.on("value", snap => {
+      const data = snap.val();
+      if (data) {
+        drawBoard(data.board);
+        if (data.winner) {
+          statusEl.textContent = `${data.winner} wins!`;
+        } else {
+          statusEl.textContent = `Turn: ${data.turn}`;
+        }
+      }
+    });
+    
+    // ----- Scoreboard Functions -----
+    function loadScores() {
+      ["your", "her"].forEach(name => {
+        const id = name === "your" ? "you" : "zuzanna";
+        scoreRef.child(id).once("value").then(snap => {
+          const data = snap.val() || { wins: 0, losses: 0 };
+          document.getElementById(name + "Wins").textContent = data.wins;
+          document.getElementById(name + "Losses").textContent = data.losses;
+        });
+      });
+    }
+    
+    function adjustScore(who, type, change) {
+      const id = who === "your" ? "you" : "zuzanna";
+      const ref = scoreRef.child(id);
+      ref.once("value").then(snap => {
+        const data = snap.val() || { wins: 0, losses: 0 };
+        data[type] = Math.max(0, (data[type] || 0) + change);
+        ref.set(data).then(loadScores);
+      });
+    }
+    
+    loadScores();
+  </script>
+</body>
+</html>

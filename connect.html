@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Connect Four Multiplayer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      background: #fff0f5;
+      font-family: 'Arial Rounded MT Bold', sans-serif;
+      text-align: center;
+      color: #4a4a4a;
+      padding: 20px;
+    }
+    h1 {
+      color: #ff69b4;
+    }
+    .player-select {
+      margin: 20px 0;
+    }
+    .score-box {
+      background: #ffe4ec;
+      border: 2px solid #ffb6c1;
+      border-radius: 12px;
+      padding: 15px;
+      margin: 10px auto;
+      max-width: 320px;
+    }
+    button {
+      background-color: #ff69b4;
+      color: white;
+      border: none;
+      padding: 8px 14px;
+      margin: 5px;
+      border-radius: 10px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #ff85c2;
+    }
+    .board {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 5px;
+      max-width: 350px;
+      margin: 30px auto;
+    }
+    .cell {
+      width: 45px;
+      height: 45px;
+      background-color: #ffeef4;
+      border: 2px solid #ffb6c1;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+    .cell.X { background-color: #ff69b4; }
+    .cell.O { background-color: #6ec5ff; }
+  </style>
+</head>
+<body>
+  <h1>Connect Four</h1>
+  
+  <div class="player-select">
+    <button onclick="setPlayer('X')">I’m Player 1 (X)</button>
+    <button onclick="setPlayer('O')">I’m Player 2 (O)</button>
+    <p id="currentPlayerLabel">Select your side</p>
+  </div>
+  
+  <div class="board" id="gameBoard"></div>
+  <p id="gameStatus"></p>
+  <button onclick="resetBoard()">Reset Game</button>
+  
+  <div class="score-box">
+    <h3>Your Score</h3>
+    Wins: <span id="yourWins">0</span> | Losses: <span id="yourLosses">0</span><br>
+    <button onclick="adjustScore('your', 'wins', 1)">+ Win</button>
+    <button onclick="adjustScore('your', 'losses', 1)">+ Loss</button>
+    <button onclick="adjustScore('your', 'wins', -1)">− Win</button>
+    <button onclick="adjustScore('your', 'losses', -1)">− Loss</button>
+  </div>
+  
+  <div class="score-box">
+    <h3>Her Score</h3>
+    Wins: <span id="herWins">0</span> | Losses: <span id="herLosses">0</span><br>
+    <button onclick="adjustScore('her', 'wins', 1)">+ Win</button>
+    <button onclick="adjustScore('her', 'losses', 1)">+ Loss</button>
+    <button onclick="adjustScore('her', 'wins', -1)">− Win</button>
+    <button onclick="adjustScore('her', 'losses', -1)">− Loss</button>
+  </div>
+  
+  <!-- Audio tags for sound effects -->
+  <audio id="dropSound" src="sounds/drop.mp3"></audio>
+  <audio id="winSound" src="sounds/win.mp3"></audio>
+  <audio id="resetSound" src="sounds/reset.mp3"></audio>
+  
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyC9FlIiG_8gDHAH-5SnmmnL_vAJTMSySIo",
+      authDomain: "chat-e7c75.firebaseapp.com",
+      databaseURL: "https://chat-e7c75-default-rtdb.firebaseio.com",
+      projectId: "chat-e7c75",
+      storageBucket: "chat-e7c75.appspot.com",
+      messagingSenderId: "340780127879",
+      appId: "1:340780127879:web:5f18ff2fb8d8f12af7ca22"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const gameRef = db.ref("games/connectFour");
+    const scoreRef = db.ref("scores/connectFour");
+    
+    let player = null;
+    const ROWS = 6, COLS = 7;
+    const boardEl = document.getElementById("gameBoard");
+    const statusEl = document.getElementById("gameStatus");
+    const currentPlayerLabel = document.getElementById("currentPlayerLabel");
+    
+    // Audio elements
+    const dropSound = document.getElementById("dropSound");
+    const winSound = document.getElementById("winSound");
+    const resetSound = document.getElementById("resetSound");
+    
+    function setPlayer(symbol) {
+      player = symbol;
+      currentPlayerLabel.textContent = `You are Player ${symbol}`;
+    }
+    
+    function drawBoard(board) {
+      boardEl.innerHTML = "";
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          const cell = document.createElement("div");
+          cell.className = "cell " + (board[r][c] || "");
+          cell.onclick = () => makeMove(c);
+          boardEl.appendChild(cell);
+        }
+      }
+    }
+    
+    function makeMove(col) {
+      if (!player) return alert("Please select your player side first.");
+      gameRef.once("value").then(snap => {
+        const data = snap.val() || { board: Array.from({length: ROWS}, () => Array(COLS).fill("")), turn: "X", winner: "" };
+        if (data.winner) return;
+        if (data.turn !== player) return alert("Not your turn!");
+        const board = data.board;
+        for (let r = ROWS - 1; r >= 0; r--) {
+          if (!board[r][col]) {
+            board[r][col] = player;
+            if (checkWin(board, r, col, player)) {
+              data.winner = player;
+              winSound.play();
+            } else {
+              data.turn = (player === "X") ? "O" : "X";
+            }
+            break;
+          }
+        }
+        gameRef.set({ board, turn: data.turn, winner: data.winner });
+        dropSound.play();
+      });
+    }
+    
+    function checkWin(board, row, col, player) {
+      const dirs = [[0,1],[1,0],[1,1],[1,-1]];
+      for (let [dr, dc] of dirs) {
+        let count = 1;
+        for (let d = 1; d < 4; d++) {
+          const r = row + dr * d, c = col + dc * d;
+          if (r < 0 || c < 0 || r >= ROWS || c >= COLS || board[r][c] !== player) break;
+          count++;
+        }
+        for (let d = 1; d < 4; d++) {
+          const r = row - dr * d, c = col - dc * d;
+          if (r < 0 || c < 0 || r >= ROWS || c >= COLS || board[r][c] !== player) break;
+          count++;
+        }
+        if (count >= 4) return true;
+      }
+      return false;
+    }
+    
+    function resetBoard() {
+      resetSound.play();
+      const board = Array.from({ length: ROWS }, () => Array(COLS).fill(""));
+      gameRef.set({ board, turn: "X", winner: "" });
+    }
+    
+    gameRef.on("value", snap => {
+      const data = snap.val();
+      if (data) {
+        drawBoard(data.board);
+        if (data.winner) {
+          statusEl.textContent = `${data.winner} wins!`;
+        } else {
+          statusEl.textContent = `Turn: ${data.turn}`;
+        }
+      }
+    });
+    
+    function loadScores() {
+      ["your", "her"].forEach(name => {
+        const id = (name === "your") ? "you" : "zuzanna";
+        scoreRef.child(id).once("value").then(snap => {
+          const data = snap.val() || { wins: 0, losses: 0 };
+          document.getElementById(name + "Wins").textContent = data.wins;
+          document.getElementById(name + "Losses").textContent = data.losses;
+        });
+      });
+    }
+    
+    function adjustScore(who, type, change) {
+      const id = (who === "your") ? "you" : "zuzanna";
+      const ref = scoreRef.child(id);
+      ref.once("value").then(snap => {
+        const data = snap.val() || { wins: 0, losses: 0 };
+        data[type] = Math.max(0, (data[type] || 0) + change);
+        ref.set(data).then(loadScores);
+      });
+    }
+    
+    loadScores();
+  </script>
+</body>
+</html>
