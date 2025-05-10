@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>To The Love Of My Life</title>
+  <style>
+    body {
+      -webkit-overflow-scrolling: touch;
+      font-family: 'Georgia', serif;
+      margin: 0;
+      padding: 15px;
+      background: #0d0d0d;
+      color: #f5f5f5;
+      text-align: center;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    h1, h2 {
+      font-size: 24px;
+      margin-bottom: 20px;
+      color: #ffb6c1;
+    }
+
+    .action-btn {
+      padding: 12px 20px;
+      font-size: 16px;
+      cursor: pointer;
+      background: #1a1a1a;
+      border: 1px solid #ffb6c1;
+      color: #ffb6c1;
+      border-radius: 8px;
+      transition: background 0.3s ease;
+      margin: 10px auto;
+      width: 90%;
+      max-width: 300px;
+      display: block;
+    }
+
+    .action-btn:hover {
+      background: #2a2a2a;
+    }
+
+    .chat-bubble {
+      background: #2a2a2a;
+      border-radius: 16px;
+      padding: 12px;
+      margin: 10px;
+      max-width: 75%;
+      color: #fff;
+      word-wrap: break-word;
+    }
+
+    .user-bubble {
+      background: #ffb7ce;
+      color: #0d0d0d;
+      margin-left: auto;
+    }
+
+    .other-bubble {
+      background: #333;
+      color: #ffb6c1;
+      margin-right: auto;
+    }
+
+    .bubble-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+
+    .bubble-pic {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+
+    #chat-container {
+      border: 2px solid #ff69b4;
+      border-radius: 12px;
+      padding: 16px;
+      max-width: 100%;
+      margin: 0 auto;
+      background: #1a1a1a;
+      text-align: left;
+    }
+
+    #chat-messages {
+      height: 250px;
+      overflow-y: auto;
+      margin-bottom: 10px;
+      padding: 10px;
+      border-radius: 8px;
+      background: #0d0d0d;
+    }
+
+    #chat-input {
+      width: 65%;
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid #ff69b4;
+      background: #2a2a2a;
+      color: #fff;
+    }
+
+    #send-btn {
+      padding: 8px 12px;
+      background: #ff69b4;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    #typing-status {
+      font-size: 14px;
+      opacity: 0.6;
+    }
+
+    #quoteView, #loveQuotesPage, #embedded-chatbox {
+      display: none;
+    }
+
+    #loveQuotesContainer {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      padding: 15px;
+    }
+
+    .quote-box {
+      background: #1a1a1a;
+      border-radius: 12px;
+      padding: 15px;
+      color: #ffb6c1;
+      border: 1px solid #ffb6c1;
+      font-size: 14px;
+      min-height: 100px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+   
+     .quote-box {
+      position: relative; /* Needed for absolute positioning */
+      padding-top: 15px; /* Give space for the number */
+}
+
+     .quote-number {
+  position: absolute;
+  top: 5px;
+  right: 10px;
+  background: #ff69b4;
+  color: white;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+.quote-content {
+  padding: 10px;
+  margin-top: 10px; /* Creates space between number and text */
+}
+
+    .quote-fullscreen {
+      font-size: 18px;
+      font-style: italic;
+      color: #ffc0cb;
+      max-width: 90%;
+      margin: 40px auto 20px;
+      padding: 0 20px;
+    }
+
+    .music-container {
+      width: 100%;
+      overflow-x: auto;
+      white-space: nowrap;
+      padding: 10px 0;
+      margin-bottom: 20px;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+
+    .music-container::-webkit-scrollbar {
+      display: none;
+    }
+
+    .music-scroller {
+      display: inline-block;
+      padding: 0 15px;
+    }
+
+    .song {
+      display: inline-block;
+      width: 150px;
+      background: #1a1a1a;
+      border: 2px solid #ffb6c1;
+      border-radius: 12px;
+      padding: 12px;
+      margin-right: 15px;
+      vertical-align: top;
+      white-space: normal;
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+
+    .song:last-child {
+      margin-right: 0;
+    }
+
+    .song:hover {
+      transform: scale(1.03);
+      background: #2a2a2a;
+    }
+
+    .song img {
+      width: 100%;
+      height: 150px;
+      border-radius: 8px;
+      object-fit: cover;
+      margin-bottom: 8px;
+    }
+
+    .song-title {
+      font-size: 14px;
+      color: #ffc0cb;
+      margin-bottom: 6px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      min-height: 36px;
+    }
+
+    .spotify-link {
+      font-size: 12px;
+      color: #ffb6c1;
+      text-decoration: underline;
+      display: block;
+    }
+
+    .mood-sections {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 20px;
+      margin: 20px auto;
+      max-width: 650px;
+    }
+
+    .mood-section {
+      padding: 15px;
+      background: #1a1a1a;
+      border: 2px solid #ffb6c1;
+      border-radius: 12px;
+      width: 300px;
+    }
+    
+    .mood-title {
+      color: #ffb6c1;
+      margin-bottom: 10px;
+    }
+    
+    .mood-options {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    
+    .mood-btn {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      transition: transform 0.2s;
+      background: #2a2a2a;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+    }
+    
+    .mood-btn:hover {
+      transform: scale(1.1);
+    }
+    
+    .mood-btn.selected {
+      transform: scale(1.1);
+      box-shadow: 0 0 10px #ffb6c1;
+    }
+    
+    .partner-mood {
+      margin-top: 10px;
+      font-size: 14px;
+      color: #ffb6c1;
+      font-style: italic;
+    }
+
+    @media (max-width: 700px) {
+      .mood-sections {
+        flex-direction: column;
+        align-items: center;
+      }
+    }
+
+    @media (max-width: 400px) {
+      #loveQuotesContainer {
+        grid-template-columns: 1fr;
+      }
+      .song {
+        width: 130px;
+      }
+      .song img {
+        height: 130px;
+      }
+      .mood-btn {
+        width: 40px;
+        height: 40px;
+        font-size: 20px;
+      }
+      .mood-section {
+        width: 100%;
+        max-width: 300px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1 id="pageTitle">To The Love Of My Life</h1>
+
+  <!-- Horizontal Music Scroller -->
+  <div class="music-container">
+    <div class="music-scroller">
+      <div class="song" onclick="playSong('music/dream-girl.mp3', 'I imagine us. you in my company and me being comfortable')">
+        <img src="images/dream-girl.jpg" alt="Dream Girl">
+        <div class="song-title">Dream Girl - CRISAUNT</div>
+        <a class="spotify-link" href="https://open.spotify.com/track/yourlink1" target="_blank">Play on Spotify</a>
+      </div>
+      
+      <div class="song" onclick="playSong('music/hey-lover.mp3', 'This song reminds me of all our goofy and silly meet-ups')">
+        <img src="images/hey-lover.jpg" alt="Hey Lover">
+        <div class="song-title">Hey Lover - The Daughter of Eve</div>
+        <a class="spotify-link" href="https://open.spotify.com/track/yourlink2" target="_blank">Play on Spotify</a>
+      </div>
+      
+      <div class="song" onclick="playSong('music/la-seine-and-i.mp3', 'Heh... some more Elisha stalker lore... I used to imagine us dancing to this song')">
+        <img src="images/la-seine.jpg" alt="La Seine and I">
+        <div class="song-title">La Seine and I (English)</div>
+        <a class="spotify-link" href="https://open.spotify.com/track/yourlink3" target="_blank">Play on Spotify</a>
+      </div>
+      
+      <div class="song" onclick="playSong('music/my-kind-of-girl.mp3', 'This song has been with me since I began liking you till now')">
+        <img src="images/mac-demarco.jpg" alt="My Kind of Girl">
+        <div class="song-title">My Kind of Girl - Mac DeMarco</div>
+        <a class="spotify-link" href="https://open.spotify.com/track/yourlink4" target="_blank">Play on Spotify</a>
+      </div>
+      
+      <div class="song" onclick="playSong('music/without-you.mp3', 'This song reminds me of how ethereal you are, perfect in creation my love')">
+        <img src="images/without-you.jpg" alt="Without You">
+        <div class="song-title">Without You - Strawberry Guy</div>
+        <a class="spotify-link" href="https://open.spotify.com/track/yourlink5" target="_blank">Play on Spotify</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mood Sections -->
+  <div class="mood-sections">
+    <!-- Zuzanna's Mood Section -->
+    <div class="mood-section">
+      <h2 class="mood-title">Zuzanna's Mood Today</h2>
+      <div class="mood-options" id="zuzannaMoodOptions">
+        <button class="mood-btn" onclick="setMood('zuzanna', 'happy')">😊</button>
+        <button class="mood-btn" onclick="setMood('zuzanna', 'loved')">🥰</button>
+        <button class="mood-btn" onclick="setMood('zuzanna', 'silly')">😜</button>
+        <button class="mood-btn" onclick="setMood('zuzanna', 'calm')">😌</button>
+        <button class="mood-btn" onclick="setMood('zuzanna', 'sad')">😢</button>
+        <button class="mood-btn" onclick="setMood('zuzanna', 'angry')">😠</button>
+      </div>
+      <div class="partner-mood" id="zuzannaMoodStatus">Loading Zuzanna's mood...</div>
+    </div>
+
+    <!-- Elisha's Mood Section -->
+    <div class="mood-section">
+      <h2 class="mood-title">Elisha's Mood Today</h2>
+      <div class="mood-options" id="elishaMoodOptions">
+        <button class="mood-btn" onclick="setMood('elisha', 'happy')">😊</button>
+        <button class="mood-btn" onclick="setMood('elisha', 'loved')">🥰</button>
+        <button class="mood-btn" onclick="setMood('elisha', 'silly')">😜</button>
+        <button class="mood-btn" onclick="setMood('elisha', 'calm')">😌</button>
+        <button class="mood-btn" onclick="setMood('elisha', 'sad')">😢</button>
+        <button class="mood-btn" onclick="setMood('elisha', 'angry')">😠</button>
+      </div>
+      <div class="partner-mood" id="elishaMoodStatus">Loading Elisha's mood...</div>
+    </div>
+  </div>
+
+  <audio id="backgroundAudio" loop></audio>
+
+  <!-- Action Buttons -->
+  <button class="action-btn" onclick="showLoveQuotesPage()">💖 View Love Quotes</button>
+  <button class="action-btn" onclick="window.location.href='scrapbook.html'">📖 Open Scrapbook</button>
+  <button class="action-btn" onclick="window.location.href='collab-drawing.html'">🎨 Open Drawing Board</button>
+  <button class="action-btn" onclick="window.location.href='love-journals.html'">📖 View Love Journals</button>
+  <button class="action-btn" onclick="window.location.href='movie.html'">🎬 WATCH MOVIE</button>
+  <button class="action-btn" onclick="window.location.href='magic8ball.html'">🔮 Ask Magic 8 Ball</button>
+  <button class="action-btn" onclick="window.location.href='love-messages.html'">💌 Send stuff to my phone</button>
+
+
+  <!-- Quote View Section (for songs) -->
+  <div id="quoteView">
+    <div id="quoteText" class="quote-fullscreen fade-in"></div>
+    <button class="action-btn" onclick="goBack()">← Back</button>
+  </div>
+
+  <!-- Love Quotes Page -->
+  <div id="loveQuotesPage">
+    <h2>All the Reasons I Love You</h2>
+    <div id="loveQuotesContainer"></div>
+    <button class="action-btn" onclick="goBack()">← Back to Main</button>
+  </div>
+
+  <!-- Chat Toggle Button -->
+  <button id="toggle-chat" class="action-btn">💬 Open Chat</button>
+
+  <!-- Embedded Chatbox -->
+  <div id="embedded-chatbox" style="margin-top: 20px;">
+    <div id="chat-container">
+      <div id="chat-messages"></div>
+      <input type="text" id="chat-input" placeholder="Type a message...">
+      <button id="send-btn">Send</button>
+      <p id="typing-status"></p>
+    </div>
+    <button id="login-btn" class="action-btn">Login with Google to Chat</button>
+  </div>
+
+  <script>
+    // ======================
+    // YOUR QUOTES DATA
+    // ======================
+    const introText = "HEJKAAAA MY GFFFFF, this is a site I made (def not with the help of chat gpt..) with things I love about you. I'll keep updating it with more lovey dovey quotes and surprises. I love you so much, and this is just a silly way to express that baby ❤️";
+
+    const quotes = [
+      "I love the little smile after you say something silly",
+      "I love your openness and honesty",
+      "I love your enthusiasm talking about anything",
+      "I love the way you stare at me with your eyes",
+      "I love your patience with me and my flaws",
+      "I love when you do goofy stuff with your silly tone",
+      "I love the way you curl up your lips in anticipation of what I'm going to say",
+      "I love the way you adore animals",
+      "I love the way you puff up your cheeks when humming to yourself",
+      "I love how I never regretted messaging you for the first time",
+      "Your beauty is irreplaceable, you're gorgeous",
+      "I love the fact my life has been better with you in it",
+      "I love how I'm certain that I want to spend the rest of my days with you",
+      "I love the fact that no matter the mood, I always think of you",
+      "I love how I think of you in my every prayer",
+      "I love the way you squeeze my hand when we're holding each other's",
+      "I love how all my favourite thoughts include you",
+      "I love how you value me even with my every fault",
+      "I love how you want to talk to me, it makes me feel special",
+      "I love the way you get overly shy when attempting romantic gestures",
+      "I love the silly role-play we do together",
+      "Days we speak less, the more I begin to appreciate you",
+      "I love everything there is to your face (especially that forehead dent.)",
+      "I love the way you make the most silly comparisons",
+      "I love how I have someone I can love more and more each day",
+      "I live life wanting to know everything from your thoughts and feelings to what you hate and love",
+      "I live life wanting to experience the rest with you",
+      "The greatest gift you've given me is your heart",
+      "I want to be there for all your highs and comfort you at every low",
+      "Every day is faced with an insatiable desire to make you happy",
+      "I love the way you play with my hands and face",
+      "I love the way you hold onto my arm I feel complete",
+      "If I had to relive life a thousand times more, I'd want it to be with you each time, pinky promise",
+      "I love the way you get excited just thinking about seeing me",
+      "I love the way I feel my affection for you deepen whenever I look at you daydreaming",
+      "I love how you've made my heart feel complete, I couldn't pray for better",
+      "I love how you squeal about stuff you're excited for",
+      "I love how we can talk about anything about each other, my lover and best friend",
+      "I love how when we are together I feel so comfortable",
+      "I love how my eyes prick with tears whenever I remember how grateful I am for you",
+      "I wouldn't want to spend a lifetime away from you, my darling",
+      "I love your silly sarcasm and princess behaviour"
+    ];
+
+    // ======================
+    // MOOD SYSTEM
+    // ======================
+    const moodMessages = {
+      happy: "is feeling happy today! 😊",
+      loved: "is feeling SUPER LOVEY DOVEY! 🥰",
+      silly: "is being silly! 😜",
+      calm: "is feeling calm and peaceful 😌",
+      sad: "is feeling sad 😢",
+      angry: "is feeling angry 😠"
+    };
+
+    const USER_EMAILS = {
+      zuzanna: "zuzannap871@gmail.com",
+      elisha: "tsitalashes@gmail.com"
+    };
+
+    // ======================
+    // FIREBASE INITIALIZATION
+    // ======================
+    let database;
+    let currentUser;
+
+    (async function() {
+      const firebaseConfig = {
+        apiKey: "AIzaSyC9FlIiG_8gDHAH-5SnmmnL_vAJTMSySIo",
+        authDomain: "chat-e7c75.firebaseapp.com",
+        databaseURL: "https://chat-e7c75-default-rtdb.firebaseio.com",
+        projectId: "chat-e7c75",
+        storageBucket: "chat-e7c75.appspot.com",
+        messagingSenderId: "340780127879",
+        appId: "1:340780127879:web:5f18ff2fb8d8f12af7ca22",
+        measurementId: "G-TWS5HLPZDE"
+      };
+
+      const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js");
+      const { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js");
+      const { getDatabase, ref, push, onChildAdded, set, onValue } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js");
+
+      const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app);
+      database = getDatabase(app);
+
+      const loginBtn = document.getElementById("login-btn");
+      const chatContainer = document.getElementById("chat-container");
+      const chatMessages = document.getElementById("chat-messages");
+      const chatInput = document.getElementById("chat-input");
+      const sendBtn = document.getElementById("send-btn");
+      const zuzannaMoodOptions = document.getElementById("zuzannaMoodOptions");
+      const elishaMoodOptions = document.getElementById("elishaMoodOptions");
+
+      // Mood functions
+      window.setMood = function(user, mood) {
+        if (!currentUser) return;
+        
+        // Check if current user is authorized to set this mood
+        if (user === "zuzanna" && currentUser.email !== USER_EMAILS.zuzanna) return;
+        if (user === "elisha" && currentUser.email !== USER_EMAILS.elisha) return;
+
+        const moodRef = ref(database, `${user}_mood`);
+        set(moodRef, {
+          mood: mood,
+          message: moodMessages[mood],
+          timestamp: new Date().getTime(),
+          name: user === "zuzanna" ? "Zuzanna" : "Elisha"
+        }).then(() => {
+          // Highlight the selected button
+          document.querySelectorAll(`#${user}MoodOptions .mood-btn`).forEach(btn => 
+            btn.classList.remove('selected')
+          );
+          event.target.classList.add('selected');
+        });
+      }
+
+      function loadMoods() {
+        // Load Zuzanna's mood
+        const zuzannaMoodRef = ref(database, "zuzanna_mood");
+        onValue(zuzannaMoodRef, (snapshot) => {
+          const moodData = snapshot.val();
+          const moodDisplay = document.getElementById('zuzannaMoodStatus');
+          
+          if (moodData) {
+            moodDisplay.textContent = `Zuzanna ${moodData.message}`;
+            if (currentUser?.email === USER_EMAILS.zuzanna) {
+              document.querySelectorAll('#zuzannaMoodOptions .mood-btn').forEach(btn => 
+                btn.classList.remove('selected')
+              );
+              const activeBtn = document.querySelector(`#zuzannaMoodOptions .mood-btn[onclick*="${moodData.mood}"]`);
+              if (activeBtn) activeBtn.classList.add('selected');
+            }
+          } else {
+            moodDisplay.textContent = "Zuzanna hasn't set her mood yet";
+          }
+        });
+
+        // Load Elisha's mood
+        const elishaMoodRef = ref(database, "elisha_mood");
+        onValue(elishaMoodRef, (snapshot) => {
+          const moodData = snapshot.val();
+          const moodDisplay = document.getElementById('elishaMoodStatus');
+          
+          if (moodData) {
+            moodDisplay.textContent = `Elisha ${moodData.message}`;
+            if (currentUser?.email === USER_EMAILS.elisha) {
+              document.querySelectorAll('#elishaMoodOptions .mood-btn').forEach(btn => 
+                btn.classList.remove('selected')
+              );
+              const activeBtn = document.querySelector(`#elishaMoodOptions .mood-btn[onclick*="${moodData.mood}"]`);
+              if (activeBtn) activeBtn.classList.add('selected');
+            }
+          } else {
+            moodDisplay.textContent = "Elisha hasn't set his mood yet";
+          }
+        });
+      }
+
+      // Auth state handler
+      onAuthStateChanged(auth, (user) => {
+        currentUser = user;
+        loginBtn.style.display = user ? "none" : "block";
+        chatContainer.style.display = user ? "block" : "none";
+        
+        // Show mood options only for the respective users
+        zuzannaMoodOptions.style.display = (user?.email === USER_EMAILS.zuzanna) ? "flex" : "none";
+        elishaMoodOptions.style.display = (user?.email === USER_EMAILS.elisha) ? "flex" : "none";
+        
+        if (user) {
+          scrollChatToBottom();
+          loadMoods();
+        }
+      });
+
+      loginBtn.onclick = () => {
+        const provider = new GoogleAuthProvider();
+        signInWithPopup(auth, provider);
+      };
+
+      sendBtn.onclick = () => {
+        const msg = chatInput.value.trim();
+        if (msg && currentUser) {
+          const now = new Date();
+          const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          push(ref(database, "messages"), {
+            uid: currentUser.uid,
+            name: currentUser.displayName || "Anonymous",
+            pic: currentUser.photoURL || "",
+            text: msg,
+            timestamp: time
+          });
+          chatInput.value = "";
+        }
+      };
+
+      // Message Handler
+      onChildAdded(ref(database, "messages"), (snapshot) => {
+        const msg = snapshot.val();
+        const bubble = document.createElement("div");
+        bubble.className = msg.uid === (currentUser?.uid) ? "chat-bubble user-bubble" : "chat-bubble other-bubble";
+        bubble.innerHTML = `
+          <div class="bubble-header">
+            ${msg.pic ? `<img src="${msg.pic}" class="bubble-pic" />` : ""}
+            <strong>${msg.name}</strong> <small>[${msg.timestamp}]</small>
+          </div>
+          <div class="bubble-text">${msg.text}</div>
+        `;
+        chatMessages.appendChild(bubble);
+        if (document.getElementById("embedded-chatbox").style.display !== "none") {
+          scrollChatToBottom();
+        }
+      });
+
+      // Initial setup
+      window.addEventListener('load', () => {
+        if (document.getElementById("embedded-chatbox").style.display !== "none") {
+          scrollChatToBottom();
+        }
+        loadMoods();
+      });
+    })();
+
+    // ======================
+    // QUOTE SYSTEM FUNCTIONS
+    // ======================
+    function showLoveQuotesPage() {
+  document.getElementById("pageTitle").style.display = "none";
+  document.querySelector(".music-container").style.display = "none";
+  document.querySelectorAll(".action-btn").forEach(btn => {
+    if (!btn.id.includes("toggle-chat")) btn.style.display = "none";
+  });
+  document.getElementById("loveQuotesPage").style.display = "block";
+  initLoveQuotesPage(); // This loads and numbers the quotes
+  document.querySelector("#loveQuotesPage .action-btn").style.display = "block";
+}
+
+    function playSong(songPath, quote) {
+      const audio = document.getElementById("backgroundAudio");
+      audio.src = songPath;
+      audio.play();
+      showQuote(quote);
+    }
+
+    function showQuote(quote) {
+      document.getElementById("pageTitle").style.display = "none";
+      document.querySelector(".music-container").style.display = "none";
+      document.querySelectorAll(".action-btn").forEach(btn => btn.style.display = "none");
+      document.getElementById("quoteText").innerText = quote;
+      document.getElementById("quoteView").style.display = "block";
+      document.querySelector("#quoteView .action-btn").style.display = "block";
+    }
+
+    function initLoveQuotesPage() {
+  const container = document.getElementById("loveQuotesContainer");
+  container.innerHTML = "";
+  
+  // Add intro box with special styling
+  const introBox = document.createElement("div");
+  introBox.className = "quote-box";
+  introBox.innerHTML = `
+    <div class="quote-number" style="background:#ffb6c1;">❤️</div>
+    <div class="quote-content">${introText}</div>
+  `;
+  container.appendChild(introBox);
+  
+  // Add all quotes with numbers
+  quotes.forEach((quote, index) => {
+    const box = document.createElement("div");
+    box.className = "quote-box";
+    box.innerHTML = `
+      <div class="quote-number">${index + 1}</div>
+      <div class="quote-content">${quote}</div>
+    `;
+    container.appendChild(box);
+  });
+}
+
+    function goBack() {
+      document.getElementById("quoteView").style.display = "none";
+      document.getElementById("loveQuotesPage").style.display = "none";
+      document.getElementById("pageTitle").style.display = "block";
+      document.querySelector(".music-container").style.display = "block";
+      document.querySelectorAll(".action-btn").forEach(btn => {
+        if (!btn.id.includes("login-btn")) btn.style.display = "block";
+      });
+    }
+
+    // ======================
+    // CHAT FUNCTIONS
+    // ======================
+    function scrollChatToBottom() {
+      const chatMessages = document.getElementById("chat-messages");
+      setTimeout(() => {
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      }, 0);
+    }
+
+    // Chat Toggle
+    document.getElementById("toggle-chat").addEventListener("click", () => {
+      const chat = document.getElementById("embedded-chatbox");
+      const isOpening = chat.style.display === "none";
+      chat.style.display = chat.style.display === "none" ? "block" : "none";
+      document.getElementById("toggle-chat").textContent = 
+        chat.style.display === "none" ? "💬 Open Chat" : "💬 Close Chat";
+      
+      if (isOpening) {
+        scrollChatToBottom();
+      }
+    });
+  </script>
+</body>
+</html>
